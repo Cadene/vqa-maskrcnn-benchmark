@@ -51,9 +51,7 @@ class RPNLossComputation(object):
         labels = []
         regression_targets = []
         for anchors_per_image, targets_per_image in zip(anchors, targets):
-            matched_targets = self.match_targets_to_anchors(
-                anchors_per_image, targets_per_image
-            )
+            matched_targets = self.match_targets_to_anchors(anchors_per_image, targets_per_image)
 
             matched_idxs = matched_targets.get_field("matched_idxs")
             labels_per_image = matched_idxs >= 0
@@ -101,13 +99,9 @@ class RPNLossComputation(object):
         # same format as the labels. Note that the labels are computed for
         # all feature levels concatenated, so we keep the same representation
         # for the objectness and the box_regression
-        for objectness_per_level, box_regression_per_level in zip(
-            objectness, box_regression
-        ):
+        for objectness_per_level, box_regression_per_level in zip(objectness, box_regression):
             N, A, H, W = objectness_per_level.shape
-            objectness_per_level = objectness_per_level.permute(0, 2, 3, 1).reshape(
-                N, -1
-            )
+            objectness_per_level = objectness_per_level.permute(0, 2, 3, 1).reshape(N, -1)
             box_regression_per_level = box_regression_per_level.view(N, -1, 4, H, W)
             box_regression_per_level = box_regression_per_level.permute(0, 3, 4, 1, 2)
             box_regression_per_level = box_regression_per_level.reshape(N, -1, 4)

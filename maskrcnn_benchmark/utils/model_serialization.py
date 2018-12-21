@@ -26,12 +26,8 @@ def align_and_update_state_dicts(model_state_dict, loaded_state_dict):
     loaded_keys = sorted(list(loaded_state_dict.keys()))
     # get a matrix of string matches, where each (i, j) entry correspond to the size of the
     # loaded_key string, if it matches
-    match_matrix = [
-        len(j) if i.endswith(j) else 0 for i in current_keys for j in loaded_keys
-    ]
-    match_matrix = torch.as_tensor(match_matrix).view(
-        len(current_keys), len(loaded_keys)
-    )
+    match_matrix = [len(j) if i.endswith(j) else 0 for i in current_keys for j in loaded_keys]
+    match_matrix = torch.as_tensor(match_matrix).view(len(current_keys), len(loaded_keys))
     max_match_size, idxs = match_matrix.max(1)
     # remove indices that correspond to no-match
     idxs[max_match_size == 0] = -1
@@ -49,11 +45,7 @@ def align_and_update_state_dicts(model_state_dict, loaded_state_dict):
         model_state_dict[key] = loaded_state_dict[key_old]
         logger.info(
             log_str_template.format(
-                key,
-                max_size,
-                key_old,
-                max_size_loaded,
-                tuple(loaded_state_dict[key_old].shape),
+                key, max_size, key_old, max_size_loaded, tuple(loaded_state_dict[key_old].shape)
             )
         )
 

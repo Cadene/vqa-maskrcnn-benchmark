@@ -41,9 +41,7 @@ def main():
 
     if distributed:
         torch.cuda.set_device(args.local_rank)
-        torch.distributed.init_process_group(
-            backend="nccl", init_method="env://"
-        )
+        torch.distributed.init_process_group(backend="nccl", init_method="env://")
 
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
@@ -75,7 +73,9 @@ def main():
             mkdir(output_folder)
             output_folders[idx] = output_folder
     data_loaders_val = make_data_loader(cfg, is_train=False, is_distributed=distributed)
-    for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
+    for output_folder, dataset_name, data_loader_val in zip(
+        output_folders, dataset_names, data_loaders_val
+    ):
         inference(
             model,
             data_loader_val,

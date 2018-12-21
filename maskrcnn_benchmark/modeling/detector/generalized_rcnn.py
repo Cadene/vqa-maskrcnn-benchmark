@@ -29,6 +29,7 @@ class GeneralizedRCNN(nn.Module):
         self.backbone = build_backbone(cfg)
         self.rpn = build_rpn(cfg)
         self.roi_heads = build_roi_heads(cfg)
+        self.return_feats = cfg.MODEL.ROI_BOX_HEAD.RETURN_FC_FEATS
 
     def forward(self, images, targets=None):
         """
@@ -61,5 +62,8 @@ class GeneralizedRCNN(nn.Module):
             losses.update(detector_losses)
             losses.update(proposal_losses)
             return losses
+
+        if self.return_feats and not self.training:
+            return (x, result)
 
         return result

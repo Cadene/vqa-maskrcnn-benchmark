@@ -16,9 +16,7 @@ class ResNet50Conv5ROIFeatureExtractor(nn.Module):
         scales = config.MODEL.ROI_BOX_HEAD.POOLER_SCALES
         sampling_ratio = config.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
         pooler = Pooler(
-            output_size=(resolution, resolution),
-            scales=scales,
-            sampling_ratio=sampling_ratio,
+            output_size=(resolution, resolution), scales=scales, sampling_ratio=sampling_ratio
         )
 
         stage = resnet.StageSpec(index=4, block_count=3, return_features=False)
@@ -53,10 +51,11 @@ class FPN2MLPFeatureExtractor(nn.Module):
         resolution = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
         scales = cfg.MODEL.ROI_BOX_HEAD.POOLER_SCALES
         sampling_ratio = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
+
+        self.return_feats = cfg.MODEL.ROI_BOX_HEAD.RETURN_FC_FEATS
+
         pooler = Pooler(
-            output_size=(resolution, resolution),
-            scales=scales,
-            sampling_ratio=sampling_ratio,
+            output_size=(resolution, resolution), scales=scales, sampling_ratio=sampling_ratio
         )
         input_size = cfg.MODEL.BACKBONE.OUT_CHANNELS * resolution ** 2
         representation_size = cfg.MODEL.ROI_BOX_HEAD.MLP_HEAD_DIM
@@ -71,17 +70,18 @@ class FPN2MLPFeatureExtractor(nn.Module):
             nn.init.constant_(l.bias, 0)
 
     def forward(self, x, proposals):
-        x = self.pooler(x, proposals)
-        x = x.view(x.size(0), -1)
+        pooled = self.pooler(x, proposals)
+        x = pooled.view(pooled.size(0), -1)
 
-        x = F.relu(self.fc6(x))
-        x = F.relu(self.fc7(x))
+        fc6 = F.relu(self.fc6(x))
+        fc7 = F.relu(self.fc7(fc6))
 
-        return x
+        if self.return_feats:
+            return {"fc6": fc6, "fc7": fc7, "proposals": proposals, "pooled": pooled}
+
+        return fc7
 
 
 def make_roi_box_feature_extractor(cfg):
-    func = registry.ROI_BOX_FEATURE_EXTRACTORS[
-        cfg.MODEL.ROI_BOX_HEAD.FEATURE_EXTRACTOR
-    ]
+    func = registry.ROI_BOX_FEATURE_EXTRACTORS[cfg.MODEL.ROI_BOX_HEAD.FEATURE_EXTRACTOR]
     return func(cfg)

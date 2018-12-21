@@ -30,13 +30,14 @@ def train(cfg, local_rank, distributed):
     model = build_detection_model(cfg)
     device = torch.device(cfg.MODEL.DEVICE)
     model.to(device)
-
     optimizer = make_optimizer(cfg, model)
     scheduler = make_lr_scheduler(cfg, optimizer)
 
     if distributed:
         model = torch.nn.parallel.DistributedDataParallel(
-            model, device_ids=[local_rank], output_device=local_rank,
+            model,
+            device_ids=[local_rank],
+            output_device=local_rank,
             # this should be removed if we update BatchNorm stats
             broadcast_buffers=False,
         )
@@ -47,30 +48,18 @@ def train(cfg, local_rank, distributed):
     output_dir = cfg.OUTPUT_DIR
 
     save_to_disk = get_rank() == 0
-    checkpointer = DetectronCheckpointer(
-        cfg, model, optimizer, scheduler, output_dir, save_to_disk
-    )
+    checkpointer = DetectronCheckpointer(cfg, model, optimizer, scheduler, output_dir, save_to_disk)
     extra_checkpoint_data = checkpointer.load(cfg.MODEL.WEIGHT)
     arguments.update(extra_checkpoint_data)
 
     data_loader = make_data_loader(
-        cfg,
-        is_train=True,
-        is_distributed=distributed,
-        start_iter=arguments["iteration"],
+        cfg, is_train=True, is_distributed=distributed, start_iter=arguments["iteration"]
     )
 
     checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
 
     do_train(
-        model,
-        data_loader,
-        optimizer,
-        scheduler,
-        checkpointer,
-        device,
-        checkpoint_period,
-        arguments,
+        model, data_loader, optimizer, scheduler, checkpointer, device, checkpoint_period, arguments
     )
 
     return model
@@ -91,7 +80,9 @@ def test(cfg, model, distributed):
             mkdir(output_folder)
             output_folders[idx] = output_folder
     data_loaders_val = make_data_loader(cfg, is_train=False, is_distributed=distributed)
-    for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
+    for output_folder, dataset_name, data_loader_val in zip(
+        output_folders, dataset_names, data_loaders_val
+    ):
         inference(
             model,
             data_loader_val,
@@ -109,18 +100,11 @@ def test(cfg, model, distributed):
 def main():
     parser = argparse.ArgumentParser(description="PyTorch Object Detection Training")
     parser.add_argument(
-        "--config-file",
-        default="",
-        metavar="FILE",
-        help="path to config file",
-        type=str,
+        "--config-file", default="", metavar="FILE", help="path to config file", type=str
     )
     parser.add_argument("--local_rank", type=int, default=0)
     parser.add_argument(
-        "--skip-test",
-        dest="skip_test",
-        help="Do not test the final model",
-        action="store_true",
+        "--skip-test", dest="skip_test", help="Do not test the final model", action="store_true"
     )
     parser.add_argument(
         "opts",
@@ -136,9 +120,7 @@ def main():
 
     if args.distributed:
         torch.cuda.set_device(args.local_rank)
-        torch.distributed.init_process_group(
-            backend="nccl", init_method="env://"
-        )
+        torch.distributed.init_process_group(backend="nccl", init_method="env://")
 
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)

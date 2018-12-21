@@ -26,7 +26,6 @@ class _NewEmptyTensorOp(torch.autograd.Function):
         return _NewEmptyTensorOp.apply(grad, shape), None
 
 
-
 class Conv2d(torch.nn.Conv2d):
     def forward(self, x):
         if x.numel() > 0:
@@ -64,13 +63,9 @@ class ConvTranspose2d(torch.nn.ConvTranspose2d):
         return _NewEmptyTensorOp.apply(x, output_shape)
 
 
-def interpolate(
-    input, size=None, scale_factor=None, mode="nearest", align_corners=None
-):
+def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corners=None):
     if input.numel() > 0:
-        return torch.nn.functional.interpolate(
-            input, size, scale_factor, mode, align_corners
-        )
+        return torch.nn.functional.interpolate(input, size, scale_factor, mode, align_corners)
 
     def _check_size_scale_factor(dim):
         if size is None and scale_factor is None:
@@ -93,9 +88,7 @@ def interpolate(
             return size
         scale_factors = _ntuple(dim)(scale_factor)
         # math.floor might return float in py2.7
-        return [
-            int(math.floor(input.size(i + 2) * scale_factors[i])) for i in range(dim)
-        ]
+        return [int(math.floor(input.size(i + 2) * scale_factors[i])) for i in range(dim)]
 
     output_shape = tuple(_output_size(2))
     output_shape = input.shape[:-2] + output_shape

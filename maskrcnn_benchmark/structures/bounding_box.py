@@ -20,13 +20,10 @@ class BoxList(object):
         device = bbox.device if isinstance(bbox, torch.Tensor) else torch.device("cpu")
         bbox = torch.as_tensor(bbox, dtype=torch.float32, device=device)
         if bbox.ndimension() != 2:
-            raise ValueError(
-                "bbox should have 2 dimensions, got {}".format(bbox.ndimension())
-            )
+            raise ValueError("bbox should have 2 dimensions, got {}".format(bbox.ndimension()))
         if bbox.size(-1) != 4:
             raise ValueError(
-                "last dimenion of bbox should have a "
-                "size of 4, got {}".format(bbox.size(-1))
+                "last dimenion of bbox should have a " "size of 4, got {}".format(bbox.size(-1))
             )
         if mode not in ("xyxy", "xywh"):
             raise ValueError("mode should be 'xyxy' or 'xywh'")
@@ -65,9 +62,7 @@ class BoxList(object):
             bbox = BoxList(bbox, self.size, mode=mode)
         else:
             TO_REMOVE = 1
-            bbox = torch.cat(
-                (xmin, ymin, xmax - xmin + TO_REMOVE, ymax - ymin + TO_REMOVE), dim=-1
-            )
+            bbox = torch.cat((xmin, ymin, xmax - xmin + TO_REMOVE, ymax - ymin + TO_REMOVE), dim=-1)
             bbox = BoxList(bbox, self.size, mode=mode)
         bbox._copy_extra_fields(self)
         return bbox
@@ -114,9 +109,7 @@ class BoxList(object):
         scaled_xmax = xmax * ratio_width
         scaled_ymin = ymin * ratio_height
         scaled_ymax = ymax * ratio_height
-        scaled_box = torch.cat(
-            (scaled_xmin, scaled_ymin, scaled_xmax, scaled_ymax), dim=-1
-        )
+        scaled_box = torch.cat((scaled_xmin, scaled_ymin, scaled_xmax, scaled_ymax), dim=-1)
         bbox = BoxList(scaled_box, size, mode="xyxy")
         # bbox._copy_extra_fields(self)
         for k, v in self.extra_fields.items():
@@ -135,9 +128,7 @@ class BoxList(object):
           :py:attr:`PIL.Image.TRANSPOSE` or :py:attr:`PIL.Image.TRANSVERSE`.
         """
         if method not in (FLIP_LEFT_RIGHT, FLIP_TOP_BOTTOM):
-            raise NotImplementedError(
-                "Only FLIP_LEFT_RIGHT and FLIP_TOP_BOTTOM implemented"
-            )
+            raise NotImplementedError("Only FLIP_LEFT_RIGHT and FLIP_TOP_BOTTOM implemented")
 
         image_width, image_height = self.size
         xmin, ymin, xmax, ymax = self._split_into_xyxy()
@@ -181,9 +172,7 @@ class BoxList(object):
         if False:
             is_empty = (cropped_xmin == cropped_xmax) | (cropped_ymin == cropped_ymax)
 
-        cropped_box = torch.cat(
-            (cropped_xmin, cropped_ymin, cropped_xmax, cropped_ymax), dim=-1
-        )
+        cropped_box = torch.cat((cropped_xmin, cropped_ymin, cropped_xmax, cropped_ymax), dim=-1)
         bbox = BoxList(cropped_box, (w, h), mode="xyxy")
         # bbox._copy_extra_fields(self)
         for k, v in self.extra_fields.items():
@@ -232,7 +221,7 @@ class BoxList(object):
             area = box[:, 2] * box[:, 3]
         else:
             raise RuntimeError("Should not be here")
-            
+
         return area
 
     def copy_with_fields(self, fields):

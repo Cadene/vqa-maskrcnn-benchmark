@@ -184,12 +184,7 @@ def _make_stage(
     for _ in range(block_count):
         blocks.append(
             transformation_module(
-                in_channels,
-                bottleneck_channels,
-                out_channels,
-                num_groups,
-                stride_in_1x1,
-                stride,
+                in_channels, bottleneck_channels, out_channels, num_groups, stride_in_1x1, stride
             )
         )
         stride = 1
@@ -212,9 +207,7 @@ class BottleneckWithFixedBatchNorm(nn.Module):
         self.downsample = None
         if in_channels != out_channels:
             self.downsample = nn.Sequential(
-                Conv2d(
-                    in_channels, out_channels, kernel_size=1, stride=stride, bias=False
-                ),
+                Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
                 FrozenBatchNorm2d(out_channels),
             )
 
@@ -224,11 +217,7 @@ class BottleneckWithFixedBatchNorm(nn.Module):
         stride_1x1, stride_3x3 = (stride, 1) if stride_in_1x1 else (1, stride)
 
         self.conv1 = Conv2d(
-            in_channels,
-            bottleneck_channels,
-            kernel_size=1,
-            stride=stride_1x1,
-            bias=False,
+            in_channels, bottleneck_channels, kernel_size=1, stride=stride_1x1, bias=False
         )
         self.bn1 = FrozenBatchNorm2d(bottleneck_channels)
         # TODO: specify init for the above
@@ -244,9 +233,7 @@ class BottleneckWithFixedBatchNorm(nn.Module):
         )
         self.bn2 = FrozenBatchNorm2d(bottleneck_channels)
 
-        self.conv3 = Conv2d(
-            bottleneck_channels, out_channels, kernel_size=1, bias=False
-        )
+        self.conv3 = Conv2d(bottleneck_channels, out_channels, kernel_size=1, bias=False)
         self.bn3 = FrozenBatchNorm2d(out_channels)
 
     def forward(self, x):
@@ -278,9 +265,7 @@ class StemWithFixedBatchNorm(nn.Module):
 
         out_channels = cfg.MODEL.RESNETS.STEM_OUT_CHANNELS
 
-        self.conv1 = Conv2d(
-            3, out_channels, kernel_size=7, stride=2, padding=3, bias=False
-        )
+        self.conv1 = Conv2d(3, out_channels, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = FrozenBatchNorm2d(out_channels)
 
     def forward(self, x):
@@ -291,15 +276,15 @@ class StemWithFixedBatchNorm(nn.Module):
         return x
 
 
-_TRANSFORMATION_MODULES = Registry({
-    "BottleneckWithFixedBatchNorm": BottleneckWithFixedBatchNorm
-})
+_TRANSFORMATION_MODULES = Registry({"BottleneckWithFixedBatchNorm": BottleneckWithFixedBatchNorm})
 
 _STEM_MODULES = Registry({"StemWithFixedBatchNorm": StemWithFixedBatchNorm})
 
-_STAGE_SPECS = Registry({
-    "R-50-C4": ResNet50StagesTo4,
-    "R-50-C5": ResNet50StagesTo5,
-    "R-50-FPN": ResNet50FPNStagesTo5,
-    "R-101-FPN": ResNet101FPNStagesTo5,
-})
+_STAGE_SPECS = Registry(
+    {
+        "R-50-C4": ResNet50StagesTo4,
+        "R-50-C5": ResNet50StagesTo5,
+        "R-50-FPN": ResNet50FPNStagesTo5,
+        "R-101-FPN": ResNet101FPNStagesTo5,
+    }
+)

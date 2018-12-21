@@ -30,9 +30,7 @@ class TestGroupedBatchSampler(unittest.TestCase):
         group_ids = [i // 10 for i in dataset]
         sampler = SequentialSampler(dataset)
         for batch_size in [1, 3, 5, 6]:
-            batch_sampler = GroupedBatchSampler(
-                sampler, group_ids, batch_size, drop_uneven
-            )
+            batch_sampler = GroupedBatchSampler(sampler, group_ids, batch_size, drop_uneven)
             result = list(batch_sampler)
             merged_result = list(itertools.chain.from_iterable(result))
             self.assertEqual(merged_result, dataset)
@@ -50,9 +48,7 @@ class TestGroupedBatchSampler(unittest.TestCase):
         ]
 
         for idx, batch_size in enumerate([1, 3, 4]):
-            batch_sampler = GroupedBatchSampler(
-                sampler, group_ids, batch_size, drop_uneven
-            )
+            batch_sampler = GroupedBatchSampler(sampler, group_ids, batch_size, drop_uneven)
             result = list(batch_sampler)
             self.assertEqual(result, expected[idx])
 
@@ -134,13 +130,9 @@ class TestIterationBasedBatchSampler(unittest.TestCase):
                 for drop_last in [False, True]:
                     dataset = [i for i in range(10)]
                     sampler = SequentialSampler(dataset)
-                    batch_sampler = BatchSampler(
-                        sampler, batch_size, drop_last=drop_last
-                    )
+                    batch_sampler = BatchSampler(sampler, batch_size, drop_last=drop_last)
 
-                    iter_sampler = IterationBasedBatchSampler(
-                        batch_sampler, num_iterations
-                    )
+                    iter_sampler = IterationBasedBatchSampler(batch_sampler, num_iterations)
                     assert len(iter_sampler) == num_iterations
                     for i, batch in enumerate(iter_sampler):
                         start = (i % len(batch_sampler)) * batch_size

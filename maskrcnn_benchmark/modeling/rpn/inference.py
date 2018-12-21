@@ -65,8 +65,7 @@ class RPNPostProcessor(torch.nn.Module):
             gt_box.add_field("objectness", torch.ones(len(gt_box), device=device))
 
         proposals = [
-            cat_boxlist((proposal, gt_box))
-            for proposal, gt_box in zip(proposals, gt_boxes)
+            cat_boxlist((proposal, gt_box)) for proposal, gt_box in zip(proposals, gt_boxes)
         ]
 
         return proposals
@@ -99,9 +98,7 @@ class RPNPostProcessor(torch.nn.Module):
         concat_anchors = torch.cat([a.bbox for a in anchors], dim=0)
         concat_anchors = concat_anchors.reshape(N, -1, 4)[batch_idx, topk_idx]
 
-        proposals = self.box_coder.decode(
-            box_regression.view(-1, 4), concat_anchors.view(-1, 4)
-        )
+        proposals = self.box_coder.decode(box_regression.view(-1, 4), concat_anchors.view(-1, 4))
 
         proposals = proposals.view(N, -1, 4)
 
@@ -157,9 +154,7 @@ class RPNPostProcessor(torch.nn.Module):
         # TODO resolve this difference and make it consistent. It should be per image,
         # and not per batch
         if self.training:
-            objectness = torch.cat(
-                [boxlist.get_field("objectness") for boxlist in boxlists], dim=0
-            )
+            objectness = torch.cat([boxlist.get_field("objectness") for boxlist in boxlists], dim=0)
             box_sizes = [len(boxlist) for boxlist in boxlists]
             post_nms_top_n = min(self.fpn_post_nms_top_n, len(objectness))
             _, inds_sorted = torch.topk(objectness, post_nms_top_n, dim=0, sorted=True)
@@ -172,9 +167,7 @@ class RPNPostProcessor(torch.nn.Module):
             for i in range(num_images):
                 objectness = boxlists[i].get_field("objectness")
                 post_nms_top_n = min(self.fpn_post_nms_top_n, len(objectness))
-                _, inds_sorted = torch.topk(
-                    objectness, post_nms_top_n, dim=0, sorted=True
-                )
+                _, inds_sorted = torch.topk(objectness, post_nms_top_n, dim=0, sorted=True)
                 boxlists[i] = boxlists[i][inds_sorted]
         return boxlists
 

@@ -29,10 +29,7 @@ def _load_C_extensions():
     source = [os.path.join(this_dir, s) for s in source]
     extra_include_paths = [this_dir]
     return load_ext(
-        "torchvision",
-        source,
-        extra_cflags=extra_cflags,
-        extra_include_paths=extra_include_paths,
+        "torchvision", source, extra_cflags=extra_cflags, extra_include_paths=extra_include_paths
     )
 
 

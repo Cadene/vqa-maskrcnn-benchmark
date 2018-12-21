@@ -12,13 +12,7 @@ from maskrcnn_benchmark.utils.model_zoo import cache_url
 
 class Checkpointer(object):
     def __init__(
-        self,
-        model,
-        optimizer=None,
-        scheduler=None,
-        save_dir="",
-        save_to_disk=None,
-        logger=None,
+        self, model, optimizer=None, scheduler=None, save_dir="", save_to_disk=None, logger=None
     ):
         self.model = model
         self.optimizer = optimizer

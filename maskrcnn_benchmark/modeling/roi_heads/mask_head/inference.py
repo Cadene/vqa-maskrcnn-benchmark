@@ -1,8 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import numpy as np
 import torch
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
 from maskrcnn_benchmark.structures.bounding_box import BoxList
 
@@ -89,10 +89,10 @@ class MaskPostProcessorCOCOFormat(MaskPostProcessor):
 # but are kept here for the moment while we need them
 # temporarily gor paste_mask_in_image
 def expand_boxes(boxes, scale):
-    w_half = (boxes[:, 2] - boxes[:, 0]) * .5
-    h_half = (boxes[:, 3] - boxes[:, 1]) * .5
-    x_c = (boxes[:, 2] + boxes[:, 0]) * .5
-    y_c = (boxes[:, 3] + boxes[:, 1]) * .5
+    w_half = (boxes[:, 2] - boxes[:, 0]) * 0.5
+    h_half = (boxes[:, 3] - boxes[:, 1]) * 0.5
+    x_c = (boxes[:, 2] + boxes[:, 0]) * 0.5
+    y_c = (boxes[:, 3] + boxes[:, 1]) * 0.5
 
     w_half *= scale
     h_half *= scale
@@ -132,7 +132,7 @@ def paste_mask_in_image(mask, box, im_h, im_w, thresh=0.5, padding=1):
 
     # Resize mask
     mask = mask.to(torch.float32)
-    mask = F.interpolate(mask, size=(h, w), mode='bilinear', align_corners=False)
+    mask = F.interpolate(mask, size=(h, w), mode="bilinear", align_corners=False)
     mask = mask[0][0]
 
     if thresh >= 0:

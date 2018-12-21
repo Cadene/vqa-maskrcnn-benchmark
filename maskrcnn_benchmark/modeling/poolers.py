@@ -63,9 +63,7 @@ class Pooler(nn.Module):
         poolers = []
         for scale in scales:
             poolers.append(
-                ROIAlign(
-                    output_size, spatial_scale=scale, sampling_ratio=sampling_ratio
-                )
+                ROIAlign(output_size, spatial_scale=scale, sampling_ratio=sampling_ratio)
             )
         self.poolers = nn.ModuleList(poolers)
         self.output_size = output_size
@@ -79,10 +77,7 @@ class Pooler(nn.Module):
         concat_boxes = cat([b.bbox for b in boxes], dim=0)
         device, dtype = concat_boxes.device, concat_boxes.dtype
         ids = cat(
-            [
-                torch.full((len(b), 1), i, dtype=dtype, device=device)
-                for i, b in enumerate(boxes)
-            ],
+            [torch.full((len(b), 1), i, dtype=dtype, device=device) for i, b in enumerate(boxes)],
             dim=0,
         )
         rois = torch.cat([ids, concat_boxes], dim=1)
@@ -109,9 +104,7 @@ class Pooler(nn.Module):
 
         dtype, device = x[0].dtype, x[0].device
         result = torch.zeros(
-            (num_rois, num_channels, output_size, output_size),
-            dtype=dtype,
-            device=device,
+            (num_rois, num_channels, output_size, output_size), dtype=dtype, device=device
         )
         for level, (per_level_feature, pooler) in enumerate(zip(x, self.poolers)):
             idx_in_level = torch.nonzero(levels == level).squeeze(1)

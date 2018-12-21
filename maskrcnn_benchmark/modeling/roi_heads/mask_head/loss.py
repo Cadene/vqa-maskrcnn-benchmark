@@ -24,9 +24,7 @@ def project_masks_on_boxes(segmentation_masks, proposals, discretization_size):
     M = discretization_size
     device = proposals.bbox.device
     proposals = proposals.convert("xyxy")
-    assert segmentation_masks.size == proposals.size, "{}, {}".format(
-        segmentation_masks, proposals
-    )
+    assert segmentation_masks.size == proposals.size, "{}, {}".format(segmentation_masks, proposals)
     # TODO put the proposals on the CPU, as the representation for the
     # masks is not efficient GPU-wise (possibly several small tensors for
     # representing a single instance mask)
@@ -137,8 +135,6 @@ def make_roi_mask_loss_evaluator(cfg):
         allow_low_quality_matches=False,
     )
 
-    loss_evaluator = MaskRCNNLossComputation(
-        matcher, cfg.MODEL.ROI_MASK_HEAD.RESOLUTION
-    )
+    loss_evaluator = MaskRCNNLossComputation(matcher, cfg.MODEL.ROI_MASK_HEAD.RESOLUTION)
 
     return loss_evaluator

@@ -26,18 +26,13 @@ def do_voc_evaluation(dataset, predictions, output_folder, logger):
         gt_boxlist = dataset.get_groundtruth(image_id)
         gt_boxlists.append(gt_boxlist)
     result = eval_detection_voc(
-        pred_boxlists=pred_boxlists,
-        gt_boxlists=gt_boxlists,
-        iou_thresh=0.5,
-        use_07_metric=True,
+        pred_boxlists=pred_boxlists, gt_boxlists=gt_boxlists, iou_thresh=0.5, use_07_metric=True
     )
     result_str = "mAP: {:.4f}\n".format(result["map"])
     for i, ap in enumerate(result["ap"]):
         if i == 0:  # skip background
             continue
-        result_str += "{:<16}: {:.4f}\n".format(
-            dataset.map_class_id_to_class_name(i), ap
-        )
+        result_str += "{:<16}: {:.4f}\n".format(dataset.map_class_id_to_class_name(i), ap)
     logger.info(result_str)
     if output_folder:
         with open(os.path.join(output_folder, "result.txt"), "w") as fid:
@@ -55,9 +50,7 @@ def eval_detection_voc(pred_boxlists, gt_boxlists, iou_thresh=0.5, use_07_metric
     Returns:
         dict represents the results
     """
-    assert len(gt_boxlists) == len(
-        pred_boxlists
-    ), "Length of gt and pred lists need to be same."
+    assert len(gt_boxlists) == len(pred_boxlists), "Length of gt and pred lists need to be same."
     prec, rec = calc_detection_voc_prec_rec(
         pred_boxlists=pred_boxlists, gt_boxlists=gt_boxlists, iou_thresh=iou_thresh
     )
@@ -111,8 +104,7 @@ def calc_detection_voc_prec_rec(gt_boxlists, pred_boxlists, iou_thresh=0.5):
             gt_bbox_l = gt_bbox_l.copy()
             gt_bbox_l[:, 2:] += 1
             iou = boxlist_iou(
-                BoxList(pred_bbox_l, gt_boxlist.size),
-                BoxList(gt_bbox_l, gt_boxlist.size),
+                BoxList(pred_bbox_l, gt_boxlist.size), BoxList(gt_bbox_l, gt_boxlist.size)
             ).numpy()
             gt_index = iou.argmax(axis=1)
             # set -1 if there is no matching ground truth
