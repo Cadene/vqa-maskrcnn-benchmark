@@ -16,9 +16,7 @@ class PostProcessor(nn.Module):
     final results
     """
 
-    def __init__(
-        self, score_thresh=0.05, nms=0.5, detections_per_img=100, box_coder=None
-    ):
+    def __init__(self, score_thresh=0.05, nms=0.5, detections_per_img=100, box_coder=None):
         """
         Arguments:
             score_thresh (float)
@@ -31,7 +29,7 @@ class PostProcessor(nn.Module):
         self.nms = nms
         self.detections_per_img = detections_per_img
         if box_coder is None:
-            box_coder = BoxCoder(weights=(10., 10., 5., 5.))
+            box_coder = BoxCoder(weights=(10.0, 10.0, 5.0, 5.0))
         self.box_coder = box_coder
 
     def forward(self, x, boxes):
@@ -64,9 +62,7 @@ class PostProcessor(nn.Module):
         class_prob = class_prob.split(boxes_per_image, dim=0)
 
         results = []
-        for prob, boxes_per_img, image_shape in zip(
-            class_prob, proposals, image_shapes
-        ):
+        for prob, boxes_per_img, image_shape in zip(class_prob, proposals, image_shapes):
             boxlist = self.prepare_boxlist(boxes_per_img, prob, image_shape)
             boxlist = boxlist.clip_to_image(remove_empty=False)
             boxlist = self.filter_results(boxlist, num_classes)
@@ -112,9 +108,7 @@ class PostProcessor(nn.Module):
             boxes_j = boxes[inds, j * 4 : (j + 1) * 4]
             boxlist_for_class = BoxList(boxes_j, boxlist.size, mode="xyxy")
             boxlist_for_class.add_field("scores", scores_j)
-            boxlist_for_class = boxlist_nms(
-                boxlist_for_class, self.nms, score_field="scores"
-            )
+            boxlist_for_class = boxlist_nms(boxlist_for_class, self.nms, score_field="scores")
             num_labels = len(boxlist_for_class)
             boxlist_for_class.add_field(
                 "labels", torch.full((num_labels,), j, dtype=torch.int64, device=device)
@@ -146,7 +140,5 @@ def make_roi_box_post_processor(cfg):
     nms_thresh = cfg.MODEL.ROI_HEADS.NMS
     detections_per_img = cfg.MODEL.ROI_HEADS.DETECTIONS_PER_IMG
 
-    postprocessor = PostProcessor(
-        score_thresh, nms_thresh, detections_per_img, box_coder
-    )
+    postprocessor = PostProcessor(score_thresh, nms_thresh, detections_per_img, box_coder)
     return postprocessor

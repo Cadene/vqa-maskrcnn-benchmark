@@ -3,13 +3,13 @@ import torch
 from torch.nn import functional as F
 
 from maskrcnn_benchmark.layers import smooth_l1_loss
+from maskrcnn_benchmark.modeling.balanced_positive_negative_sampler import (
+    BalancedPositiveNegativeSampler,
+)
 from maskrcnn_benchmark.modeling.box_coder import BoxCoder
 from maskrcnn_benchmark.modeling.matcher import Matcher
-from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
-from maskrcnn_benchmark.modeling.balanced_positive_negative_sampler import (
-    BalancedPositiveNegativeSampler
-)
 from maskrcnn_benchmark.modeling.utils import cat
+from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
 
 
 class FastRCNNLossComputation(object):
@@ -18,7 +18,7 @@ class FastRCNNLossComputation(object):
     Also supports FPN
     """
 
-    def __init__(self, proposal_matcher, fg_bg_sampler, box_coder):
+    def __init__(self, proposal_matcher, fg_bg_sampler, box_coder, has_attributes=False):
         """
         Arguments:
             proposal_matcher (Matcher)
@@ -28,12 +28,16 @@ class FastRCNNLossComputation(object):
         self.proposal_matcher = proposal_matcher
         self.fg_bg_sampler = fg_bg_sampler
         self.box_coder = box_coder
+        self.has_atrributes = has_attributes
 
     def match_targets_to_proposals(self, proposal, target):
         match_quality_matrix = boxlist_iou(target, proposal)
         matched_idxs = self.proposal_matcher(match_quality_matrix)
         # Fast RCNN only need "labels" field for selecting the targets
-        target = target.copy_with_fields("labels")
+        if self.has_atrributes:
+            target = target.copy_with_fields(("labels", "attributes"))
+        else:
+            target = target.copy_with_fields("labels")
         # get the targets corresponding GT for each proposal
         # NB: need to clamp the indices because we can have a single
         # GT in the image, and matched_idxs can be -2, which goes
@@ -45,6 +49,7 @@ class FastRCNNLossComputation(object):
     def prepare_targets(self, proposals, targets):
         labels = []
         regression_targets = []
+        attribute_labels = []
         for proposals_per_image, targets_per_image in zip(proposals, targets):
             matched_targets = self.match_targets_to_proposals(
                 proposals_per_image, targets_per_image
@@ -69,6 +74,22 @@ class FastRCNNLossComputation(object):
 
             labels.append(labels_per_image)
             regression_targets.append(regression_targets_per_image)
+            # compute regression targets
+            regression_targets_per_image = self.box_coder.encode(
+                matched_targets.bbox, proposals_per_image.bbox
+            )
+
+            if self.has_atrributes:
+                attr_labels_per_image = matched_targets.get_field("attributes")
+                attr_labels_per_image = attr_labels_per_image.to(dtype=torch.int64)
+
+                attr_labels_per_image[bg_inds] = -1
+                attr_labels_per_image[ignore_inds] = -1
+
+                attribute_labels.append(attr_labels_per_image)
+
+        if self.has_atrributes:
+            return labels, regression_targets, attribute_labels
 
         return labels, regression_targets
 
@@ -83,19 +104,31 @@ class FastRCNNLossComputation(object):
             targets (list[BoxList])
         """
 
-        labels, regression_targets = self.prepare_targets(proposals, targets)
+        if self.has_atrributes:
+            labels, regression_targets, attr_labels = self.prepare_targets(proposals, targets)
+        else:
+            labels, regression_targets = self.prepare_targets(proposals, targets)
         sampled_pos_inds, sampled_neg_inds = self.fg_bg_sampler(labels)
 
         proposals = list(proposals)
-        # add corresponding label and regression_targets information to the bounding boxes
-        for labels_per_image, regression_targets_per_image, proposals_per_image in zip(
-            labels, regression_targets, proposals
-        ):
-            proposals_per_image.add_field("labels", labels_per_image)
-            proposals_per_image.add_field(
-                "regression_targets", regression_targets_per_image
-            )
 
+        if self.has_atrributes:
+            # add corresponding label and regression_targets information to the bounding boxes
+            for (
+                labels_per_image,
+                regression_targets_per_image,
+                attr_labels_per_image,
+                proposals_per_image,
+            ) in zip(labels, regression_targets, attr_labels, proposals):
+                proposals_per_image.add_field("labels", labels_per_image)
+                proposals_per_image.add_field("attr_labels", attr_labels_per_image)
+                proposals_per_image.add_field("regression_targets", regression_targets_per_image)
+        else:
+            for labels_per_image, regression_targets_per_image, proposals_per_image in zip(
+                labels, regression_targets, proposals
+            ):
+                proposals_per_image.add_field("labels", labels_per_image)
+                proposals_per_image.add_field("regression_targets", regression_targets_per_image)
         # distributed sampled proposals, that were obtained on all feature maps
         # concatenated via the fg_bg_sampler, into individual feature map levels
         for img_idx, (pos_inds_img, neg_inds_img) in enumerate(
@@ -108,7 +141,7 @@ class FastRCNNLossComputation(object):
         self._proposals = proposals
         return proposals
 
-    def __call__(self, class_logits, box_regression):
+    def __call__(self, class_logits, box_regression, attribute_logits=None):
         """
         Computes the loss for Faster R-CNN.
         This requires that the subsample method has been called beforehand.
@@ -153,6 +186,19 @@ class FastRCNNLossComputation(object):
         )
         box_loss = box_loss / labels.numel()
 
+        # Attribute loss
+        if attribute_logits is not None:
+            attributes = cat([proposal.get_field("attr_labels") for proposal in proposals], dim=0)
+            attributes = attributes[sampled_pos_inds_subset]
+
+            attribute_logits = cat(attribute_logits, dim=0)
+            n_boxes = attribute_logits.shape[0]
+            attribute_logits = attribute_logits.unsqueeze(1)
+            attribute_logits = attribute_logits.expand(n_boxes, 16, 400).contiguous().view(-1, 400)
+            attributes = attributes.view(-1)
+            attribute_loss = 0.5 * F.cross_entropy(attribute_logits, attributes, ignore_index=-1)
+            return classification_loss, box_loss, attribute_loss
+
         return classification_loss, box_loss
 
 
@@ -170,6 +216,8 @@ def make_roi_box_loss_evaluator(cfg):
         cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE, cfg.MODEL.ROI_HEADS.POSITIVE_FRACTION
     )
 
-    loss_evaluator = FastRCNNLossComputation(matcher, fg_bg_sampler, box_coder)
+    has_attributes = cfg.MODEL.ROI_BOX_HEAD.ATTR
+
+    loss_evaluator = FastRCNNLossComputation(matcher, fg_bg_sampler, box_coder, has_attributes)
 
     return loss_evaluator
