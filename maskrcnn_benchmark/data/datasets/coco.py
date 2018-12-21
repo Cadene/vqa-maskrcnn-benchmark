@@ -7,9 +7,7 @@ from maskrcnn_benchmark.structures.segmentation_mask import SegmentationMask
 
 
 class COCODataset(torchvision.datasets.coco.CocoDetection):
-    def __init__(
-        self, ann_file, root, remove_images_without_annotations, transforms=None
-    ):
+    def __init__(self, ann_file, root, remove_images_without_annotations, transforms=None):
         super(COCODataset, self).__init__(root, ann_file)
         # sort indices for reproducible results
         self.ids = sorted(self.ids)
@@ -31,6 +29,23 @@ class COCODataset(torchvision.datasets.coco.CocoDetection):
         self.id_to_img_map = {k: v for k, v in enumerate(self.ids)}
         self.transforms = transforms
 
+        # Ideally this should be in an inherited subclass, but I'm lazy rn
+        # Visual Genome training with attribute head
+        self.has_attributes = "attCategories" in self.coco.dataset
+
+        if self.has_attributes:
+            self.attribute_ids = [x["id"] for x in self.coco.dataset["attCategories"]]
+
+            self.json_attribute_id_to_contiguous_id = {
+                v: i + 1 for i, v in enumerate(self.attribute_ids)
+            }
+            self.contiguous_attribute_id_to_json_id = {
+                v: k for k, v in self.json_attribute_id_to_contiguous_id.items()
+            }
+
+            self.max_attributes_per_ins = 16
+            self.num_attributes = 400
+
     def __getitem__(self, idx):
         img, anno = super(COCODataset, self).__getitem__(idx)
 
@@ -50,6 +65,14 @@ class COCODataset(torchvision.datasets.coco.CocoDetection):
         masks = [obj["segmentation"] for obj in anno]
         masks = SegmentationMask(masks, img.size)
         target.add_field("masks", masks)
+
+        # VG related genome stuff
+        attributes = -torch.ones((len(boxes), self.max_attributes_per_ins), dtype=torch.long)
+        for idx, obj in enumerate(anno):
+            if "attribute_ids" in obj:
+                for jdx, att in enumerate(obj["attribute_ids"]):
+                    attributes[idx, jdx] = att
+        target.add_field("attributes", attributes)
 
         target = target.clip_to_image(remove_empty=True)
 
