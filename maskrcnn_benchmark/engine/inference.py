@@ -5,6 +5,7 @@ import os
 import time
 
 import torch
+import numpy as np
 from tqdm import tqdm
 
 from maskrcnn_benchmark.data.datasets.evaluation import evaluate
@@ -51,13 +52,16 @@ def compute_on_dataset(model, data_loader, device):
     results_dict = {}
     cpu_device = torch.device("cpu")
     for i, batch in enumerate(tqdm(data_loader)):
-        print(i)
         images, targets, image_ids = batch
         images = images.to(device)
         with torch.no_grad():
             output = model(images)
             if isinstance(output, tuple):
                 feats = process_feature_extraction(output)
+                
+                for img_id, feat in zip(image_ids, feats):
+                    np.save('save_feats/' + str(img_id), feat.cpu().numpy())
+
                 output = output[1]
             output = [o.to(cpu_device) for o in output]
         results_dict.update({img_id: result for img_id, result in zip(image_ids, output)})
