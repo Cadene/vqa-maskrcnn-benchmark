@@ -28,13 +28,13 @@ class FastRCNNLossComputation(object):
         self.proposal_matcher = proposal_matcher
         self.fg_bg_sampler = fg_bg_sampler
         self.box_coder = box_coder
-        self.has_atrributes = has_attributes
+        self.has_attributes = has_attributes
 
     def match_targets_to_proposals(self, proposal, target):
         match_quality_matrix = boxlist_iou(target, proposal)
         matched_idxs = self.proposal_matcher(match_quality_matrix)
         # Fast RCNN only need "labels" field for selecting the targets
-        if self.has_atrributes:
+        if self.has_attributes:
             target = target.copy_with_fields(("labels", "attributes"))
         else:
             target = target.copy_with_fields("labels")
@@ -74,12 +74,8 @@ class FastRCNNLossComputation(object):
 
             labels.append(labels_per_image)
             regression_targets.append(regression_targets_per_image)
-            # compute regression targets
-            regression_targets_per_image = self.box_coder.encode(
-                matched_targets.bbox, proposals_per_image.bbox
-            )
 
-            if self.has_atrributes:
+            if self.has_attributes:
                 attr_labels_per_image = matched_targets.get_field("attributes")
                 attr_labels_per_image = attr_labels_per_image.to(dtype=torch.int64)
 
@@ -88,7 +84,7 @@ class FastRCNNLossComputation(object):
 
                 attribute_labels.append(attr_labels_per_image)
 
-        if self.has_atrributes:
+        if self.has_attributes:
             return labels, regression_targets, attribute_labels
 
         return labels, regression_targets
@@ -104,7 +100,7 @@ class FastRCNNLossComputation(object):
             targets (list[BoxList])
         """
 
-        if self.has_atrributes:
+        if self.has_attributes:
             labels, regression_targets, attr_labels = self.prepare_targets(proposals, targets)
         else:
             labels, regression_targets = self.prepare_targets(proposals, targets)
@@ -112,7 +108,7 @@ class FastRCNNLossComputation(object):
 
         proposals = list(proposals)
 
-        if self.has_atrributes:
+        if self.has_attributes:
             # add corresponding label and regression_targets information to the bounding boxes
             for (
                 labels_per_image,
