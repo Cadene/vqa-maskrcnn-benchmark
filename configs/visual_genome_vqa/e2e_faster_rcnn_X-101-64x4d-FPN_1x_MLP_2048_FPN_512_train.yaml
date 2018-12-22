@@ -25,7 +25,14 @@ MODEL:
     NUM_GROUPS: 64
     WIDTH_PER_GROUP: 4
 DATASETS:
-  TRAIN: ("visual_genome_train",)
+  TRAIN: ("visual_genome_train", "visual_genome_val")
   TEST: ("visual_genome_val",)
 DATALOADER:
   NUM_WORKERS: 8
+SOLVER: 
+  BASE_LR: 0.01
+  MAX_ITER: 180000
+  STEPS: (120000, 160000)
+  IMS_PER_BATCH: 8
+  CHECKPOINT_PERIOD: 20000
+  WEIGHT_DECAY: 0.0001
