@@ -67,11 +67,14 @@ class DatasetCatalog(object):
         },
         "visual_genome_train": {"img_dir": "vg/images", "ann_file": "vg/annotations/train.json"},
         "visual_genome_val": {"img_dir": "vg/images", "ann_file": "vg/annotations/val.json"},
+        "vqa_train": {"img_dir": "vqa/images", "ann_file": "vqa/annotations/vqa_train.json"},
+        "vqa_val": {"img_dir": "vqa/images", "ann_file": "vqa/annotations/vqa_val.json"},
+        "vqa_test": {"img_dir": "vqa/images", "ann_file": "vqa/annotations/vqa_test.json"},
     }
 
     @staticmethod
     def get(name):
-        if "coco" in name or "genome" in name:
+        if "coco" in name or "genome" in name or "vqa" in name:
             data_dir = DatasetCatalog.DATA_DIR
             attrs = DatasetCatalog.DATASETS[name]
             args = dict(

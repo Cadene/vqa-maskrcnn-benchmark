@@ -1,6 +1,5 @@
 MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
-  WEIGHT: "https://s3-us-west-2.amazonaws.com/detectron/ImageNetPretrained/FBResNeXt/X-101-64x4d.pkl"
   BACKBONE:
       CONV_BODY: "R-101-FPN"
       OUT_CHANNELS: 512
@@ -18,14 +17,14 @@ MODEL:
     PREDICTOR: "FPNPredictor"
     MLP_HEAD_DIM: 2048
     NUM_CLASSES: 1601
-    # VQA GENOME SPECIFIC STUFF
-    ATTR: True
+    # For evaluation we don't need attribute head
+    ATTR: False
   RESNETS:
     STRIDE_IN_1X1: False
     NUM_GROUPS: 64
     WIDTH_PER_GROUP: 4
 DATASETS:
   TRAIN: ("visual_genome_train",)
-  TEST: ("visual_genome_val",)
+  TEST: ("vqa_val",)
 DATALOADER:
   NUM_WORKERS: 8

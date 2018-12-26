@@ -25,6 +25,6 @@ MODEL:
     WIDTH_PER_GROUP: 4
 DATASETS:
   TRAIN: ("visual_genome_train",)
-  TEST: ("visual_genome_val",)
+  TEST: ("vqa_train", "vqa_val", "vqa_test")
 DATALOADER:
   NUM_WORKERS: 8
