@@ -51,6 +51,8 @@ def compute_on_dataset(model, data_loader, device):
     model.eval()
     results_dict = {}
     cpu_device = torch.device("cpu")
+
+    split = data_loader.dataset.get_img_info(0)['file_name'].split('_')[1]
     for i, batch in enumerate(tqdm(data_loader)):
         images, targets, image_ids = batch
         images = images.to(device)
@@ -60,7 +62,8 @@ def compute_on_dataset(model, data_loader, device):
                 feats = process_feature_extraction(output)
                 
                 for img_id, feat in zip(image_ids, feats):
-                    np.save('save_feats/' + str(img_id), feat.cpu().numpy())
+                    feat_name = 'COCO_{}_{}'.format(split, str(img_id).zfill(12))
+                    np.save('save_feats/{}/{}'.format(split, feat_name), feat.cpu().numpy())
 
                 output = output[1]
             output = [o.to(cpu_device) for o in output]
