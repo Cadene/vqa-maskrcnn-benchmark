@@ -189,10 +189,36 @@ class FastRCNNLossComputation(object):
 
             attribute_logits = cat(attribute_logits, dim=0)
             n_boxes = attribute_logits.shape[0]
+
+            # N_BOXES, N_ATTR -> N_BOXES, 1, N_ATTR
             attribute_logits = attribute_logits.unsqueeze(1)
+
+            # N_BOXES, 1, N_ATTR -> N_BOXES, MAX_ATTR_PER_INST, N_ATTR -> N_BOXES * MAX_ATTR_PER_INST, N_ATTR
             attribute_logits = attribute_logits.expand(n_boxes, 16, 400).contiguous().view(-1, 400)
+
+            # Normalize each box loss by # of valid GT attributes (ie attr != -1)
+            # Repeat number of valid attributes per box along the rows and take transpose
+            inv_per_box_weights = (
+                (attributes > 0).sum(dim=1).repeat(16, 1).transpose(0, 1).flatten()
+            )
+            per_box_weights = inv_per_box_weights.float().reciprocal()
+            per_box_weights[per_box_weights > 1] = 0.0
+
             attributes = attributes.view(-1)
-            attribute_loss = 0.5 * F.cross_entropy(attribute_logits, attributes, ignore_index=-1)
+            attribute_loss = 0.5 * F.cross_entropy(
+                attribute_logits, attributes, reduction="none", ignore_index=-1
+            )
+
+            attribute_loss = (attribute_loss * per_box_weights).view(n_boxes, -1).sum(dim=1)
+
+            # Find number of boxes with atleast valid attribute
+            n_valid_boxes = len(attribute_loss.nonzero())
+
+            if n_valid_boxes > 0:
+                attribute_loss = (attribute_loss / n_valid_boxes).sum()
+            else:
+                attribute_loss = (attribute_loss * 0.0).sum()
+
             return classification_loss, box_loss, attribute_loss
 
         return classification_loss, box_loss

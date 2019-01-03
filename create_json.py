@@ -1,9 +1,10 @@
-import os
-import json
 import argparse
-import scipy.misc as m
+import json
+import os
 
+import scipy.misc as m
 from tqdm import tqdm
+
 
 def create_json(base_json, img_root, split):
     img_paths = os.listdir(img_root)

@@ -4,8 +4,8 @@ import logging
 import os
 import time
 
-import torch
 import numpy as np
+import torch
 from tqdm import tqdm
 
 from maskrcnn_benchmark.data.datasets.evaluation import evaluate
@@ -20,7 +20,7 @@ def process_feature_extraction(output, conf_thresh=0.2):
     batch_size = len(output[0]["proposals"])
     n_boxes_per_image = [len(_) for _ in output[0]["proposals"]]
     score_list = output[0]["scores"].split(n_boxes_per_image)
-    feats = output[0]["fc7"].split(n_boxes_per_image)
+    feats = output[0]["fc6"].split(n_boxes_per_image)
     cur_device = score_list[0].device
 
     feat_list = []
@@ -52,7 +52,7 @@ def compute_on_dataset(model, data_loader, device):
     results_dict = {}
     cpu_device = torch.device("cpu")
 
-    split = data_loader.dataset.get_img_info(0)['file_name'].split('_')[1]
+    split = data_loader.dataset.get_img_info(0)["file_name"].split("_")[1]
     for i, batch in enumerate(tqdm(data_loader)):
         images, targets, image_ids = batch
         images = images.to(device)
@@ -60,10 +60,13 @@ def compute_on_dataset(model, data_loader, device):
             output = model(images)
             if isinstance(output, tuple):
                 feats = process_feature_extraction(output)
-                
+
                 for img_id, feat in zip(image_ids, feats):
-                    feat_name = 'COCO_{}_{}'.format(split, str(img_id).zfill(12))
-                    np.save('save_feats/{}/{}'.format(split, feat_name), feat.cpu().numpy())
+                    coco_id = data_loader.dataset.get_img_info(img_id)["file_name"].split("_")[-1][
+                        :-4
+                    ]
+                    feat_name = "COCO_{}_{}".format(split, coco_id)
+                    np.save("save_feats_new/fc6/{}/{}".format(split, feat_name), feat.cpu().numpy())
 
                 output = output[1]
             output = [o.to(cpu_device) for o in output]
