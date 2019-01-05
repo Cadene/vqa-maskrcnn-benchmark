@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 from torch import nn
+from torch.nn import functional as F
 
 from maskrcnn_benchmark.modeling.utils import cat
 
@@ -91,7 +92,7 @@ class FPNPredictor(nn.Module):
 
                 # pass through attr head layers
                 fc_attr = self.attr_linear1(concat_attr)
-                attr_score = self.attr_linear2(fc_attr)
+                attr_score = F.relu(self.attr_linear2(fc_attr))
                 x["attr_score"] = attr_score
 
             return x
