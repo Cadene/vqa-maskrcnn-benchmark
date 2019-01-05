@@ -15,6 +15,8 @@ from ..utils.comm import is_main_process
 from ..utils.comm import scatter_gather
 from ..utils.comm import synchronize
 
+save_path = "/checkpoint/meetshah/features/vqa/pytorch/seed/10923/"
+
 
 def process_feature_extraction(output, conf_thresh=0.2):
     batch_size = len(output[0]["proposals"])
@@ -66,7 +68,8 @@ def compute_on_dataset(model, data_loader, device):
                         :-4
                     ]
                     feat_name = "COCO_{}_{}".format(split, coco_id)
-                    np.save("save_feats_new/fc6/{}/{}".format(split, feat_name), feat.cpu().numpy())
+                    feat_save_path = os.path.join(save_path, "fc6/{}/{}".format(split, feat_name))
+                    np.save(feat_save_path, feat.cpu().numpy())
 
                 output = output[1]
             output = [o.to(cpu_device) for o in output]

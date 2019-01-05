@@ -53,6 +53,12 @@ class FPNPredictor(nn.Module):
             self.attr_linear1 = nn.Linear(representation_size + 256, 512)
             self.attr_linear2 = nn.Linear(512, 400)
 
+            nn.init.normal_(self.cls_embed.weight, std=0.01)
+            nn.init.normal_(self.attr_linear1.weight, std=0.01)
+            nn.init.normal_(self.attr_linear2.weight, std=0.01)
+            nn.init.constant_(self.attr_linear1.bias, 0)
+            nn.init.constant_(self.attr_linear2.bias, 0)
+
     def forward(self, x, proposals=None):
         if isinstance(x, dict):
             in_feat = x["fc7"]

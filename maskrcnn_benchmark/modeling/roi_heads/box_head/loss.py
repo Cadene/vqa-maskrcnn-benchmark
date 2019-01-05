@@ -199,7 +199,7 @@ class FastRCNNLossComputation(object):
             # Normalize each box loss by # of valid GT attributes (ie attr != -1)
             # Repeat number of valid attributes per box along the rows and take transpose
             inv_per_box_weights = (
-                (attributes > 0).sum(dim=1).repeat(16, 1).transpose(0, 1).flatten()
+                (attributes >= 0).sum(dim=1).repeat(16, 1).transpose(0, 1).flatten()
             )
             per_box_weights = inv_per_box_weights.float().reciprocal()
             per_box_weights[per_box_weights > 1] = 0.0
