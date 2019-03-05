@@ -70,6 +70,7 @@ class DatasetCatalog(object):
         "vqa_train": {"img_dir": "vqa/images", "ann_file": "vqa/annotations/vqa_train.json"},
         "vqa_val": {"img_dir": "vqa/images", "ann_file": "vqa/annotations/vqa_val.json"},
         "vqa_test": {"img_dir": "vqa/images", "ann_file": "vqa/annotations/vqa_test.json"},
+        "vqa_single": {"img_dir": "vqa/images", "ann_file": "vqa/annotations/vqa_single.json"},
     }
 
     @staticmethod

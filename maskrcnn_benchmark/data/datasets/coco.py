@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import torch
+import numpy as np
 import torchvision
 
 from maskrcnn_benchmark.structures.bounding_box import BoxList
@@ -77,7 +78,29 @@ class COCODataset(torchvision.datasets.coco.CocoDetection):
         target = target.clip_to_image(remove_empty=True)
 
         if self.transforms is not None:
-            img, target = self.transforms(img, target)
+            import cv2
+            ## TEST only, Mimic Detectron Behaviour
+            im = np.array(img).astype(np.float32)
+            im = im[:,:,::-1] 
+            im -= self.transforms.transforms[-1].mean
+            im_shape = im.shape
+            im_size_min = np.min(im_shape[0:2])
+            im_size_max = np.max(im_shape[0:2])
+            im_scale = float(800) / float(im_size_min)
+            # Prevent the biggest axis from being more than max_size
+            if np.round(im_scale * im_size_max) > 1333:
+                im_scale = float(1333) / float(im_size_max)
+            im = cv2.resize(
+                im,
+                None,
+                None,
+                fx=im_scale,
+                fy=im_scale,
+                interpolation=cv2.INTER_LINEAR
+            )
+            img = torch.from_numpy(im).permute(2,0,1)
+
+            #img, target = self.transforms(img, target)
 
         return img, target, idx
 

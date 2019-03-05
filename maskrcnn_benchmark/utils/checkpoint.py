@@ -77,7 +77,7 @@ class Checkpointer(object):
             # if file doesn't exist, maybe because it has just been
             # deleted by a separate process
             last_saved = ""
-        return last_saved
+        return last_saved.rstrip()
 
     def tag_last_checkpoint(self, last_filename):
         save_file = os.path.join(self.save_dir, "last_checkpoint")

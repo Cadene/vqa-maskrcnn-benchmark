@@ -15,13 +15,14 @@ from ..utils.comm import is_main_process
 from ..utils.comm import scatter_gather
 from ..utils.comm import synchronize
 
-save_path = "/checkpoint/meetshah/features/vqa/pytorch/seed/10923/"
+save_path = "/checkpoint/meetshah/features/vqa/pytorch/seed/14763_softmaxed/"
 
 
 def process_feature_extraction(output, conf_thresh=0.2):
     batch_size = len(output[0]["proposals"])
     n_boxes_per_image = [len(_) for _ in output[0]["proposals"]]
     score_list = output[0]["scores"].split(n_boxes_per_image)
+    score_list = [torch.nn.functional.softmax(x, -1) for x in score_list]
     feats = output[0]["fc6"].split(n_boxes_per_image)
     cur_device = score_list[0].device
 
@@ -36,13 +37,13 @@ def process_feature_extraction(output, conf_thresh=0.2):
         for cls_ind in range(1, scores.shape[1]):
             cls_scores = scores[:, cls_ind]
             keep = nms(dets, cls_scores, 0.5)
-            # max_conf[keep] = torch.where(cls_scores[keep] > max_conf[keep],
-            #                              cls_scores[keep],
-            #                              max_conf[keep])
+            max_conf[keep] = torch.where(cls_scores[keep] > max_conf[keep],
+                                          cls_scores[keep],
+                                          max_conf[keep])
 
-            cond = cls_scores[keep] > max_conf[keep]
-            cond = cond.float()
-            max_conf[keep] = cond * cls_scores[keep] + ((1 - cond) * max_conf[keep])
+            #cond = cls_scores[keep] > max_conf[keep]
+            #cond = cond.float()
+            #max_conf[keep] = cond * cls_scores[keep] + ((1 - cond) * max_conf[keep])
 
         keep_boxes = torch.argsort(max_conf, descending=True)[:100]
         feat_list.append(feats[i][keep_boxes])
