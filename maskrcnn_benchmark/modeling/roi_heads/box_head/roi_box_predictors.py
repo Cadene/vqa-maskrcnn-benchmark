@@ -1,5 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 from torch import nn
+from torch.nn import functional as F
+
+from maskrcnn_benchmark.modeling.utils import cat
 
 
 class FastRCNNPredictor(nn.Module):
@@ -35,6 +38,8 @@ class FPNPredictor(nn.Module):
         super(FPNPredictor, self).__init__()
         num_classes = cfg.MODEL.ROI_BOX_HEAD.NUM_CLASSES
         representation_size = cfg.MODEL.ROI_BOX_HEAD.MLP_HEAD_DIM
+        self.return_feats = cfg.MODEL.ROI_BOX_HEAD.RETURN_FC_FEATS
+        self.has_attributes = cfg.MODEL.ROI_BOX_HEAD.ATTR
 
         self.cls_score = nn.Linear(representation_size, num_classes)
         self.bbox_pred = nn.Linear(representation_size, num_classes * 4)
@@ -44,17 +49,58 @@ class FPNPredictor(nn.Module):
         for l in [self.cls_score, self.bbox_pred]:
             nn.init.constant_(l.bias, 0)
 
-    def forward(self, x):
-        scores = self.cls_score(x)
-        bbox_deltas = self.bbox_pred(x)
+        if self.has_attributes:
+            self.cls_embed = nn.Embedding(num_classes, 256)
+            self.attr_linear1 = nn.Linear(representation_size + 256, 512)
+            self.attr_linear2 = nn.Linear(512, 400)
+
+            nn.init.normal_(self.cls_embed.weight, std=0.01)
+            nn.init.normal_(self.attr_linear1.weight, std=0.01)
+            nn.init.normal_(self.attr_linear2.weight, std=0.01)
+            nn.init.constant_(self.attr_linear1.bias, 0)
+            nn.init.constant_(self.attr_linear2.bias, 0)
+
+    def forward(self, x, proposals=None):
+        if isinstance(x, dict):
+            in_feat = x["fc7"]
+        else:
+            in_feat = x
+
+        scores = self.cls_score(in_feat)
+        bbox_deltas = self.bbox_pred(in_feat)
+
+        if self.return_feats:
+            x["scores"] = scores
+            x["bbox_deltas"] = bbox_deltas
+
+            if self.has_attributes:
+                assert proposals is not None, "Proposals are None while attr=True"
+
+                # get labels and indices of proposals with foreground
+                all_labels = cat([prop.get_field("labels") for prop in proposals], dim=0)
+                fg_idx = all_labels > 0
+                fg_labels = all_labels[fg_idx]
+
+                # slice fc7 for those indices
+                fc7_fg = in_feat[fg_idx]
+
+                # get embeddings of indices using gt cls labels
+                cls_embed_out = self.cls_embed(fg_labels)
+
+                # concat with fc7 feats
+                concat_attr = cat([fc7_fg, cls_embed_out], dim=1)
+
+                # pass through attr head layers
+                fc_attr = self.attr_linear1(concat_attr)
+                attr_score = F.relu(self.attr_linear2(fc_attr))
+                x["attr_score"] = attr_score
+
+            return x
 
         return scores, bbox_deltas
 
 
-_ROI_BOX_PREDICTOR = {
-    "FastRCNNPredictor": FastRCNNPredictor,
-    "FPNPredictor": FPNPredictor,
-}
+_ROI_BOX_PREDICTOR = {"FastRCNNPredictor": FastRCNNPredictor, "FPNPredictor": FPNPredictor}
 
 
 def make_roi_box_predictor(cfg):

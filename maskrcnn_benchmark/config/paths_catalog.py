@@ -9,59 +9,44 @@ class DatasetCatalog(object):
     DATASETS = {
         "coco_2014_train": {
             "img_dir": "coco/train2014",
-            "ann_file": "coco/annotations/instances_train2014.json"
+            "ann_file": "coco/annotations/instances_train2014.json",
         },
         "coco_2014_val": {
             "img_dir": "coco/val2014",
-            "ann_file": "coco/annotations/instances_val2014.json"
+            "ann_file": "coco/annotations/instances_val2014.json",
         },
         "coco_2014_minival": {
             "img_dir": "coco/val2014",
-            "ann_file": "coco/annotations/instances_minival2014.json"
+            "ann_file": "coco/annotations/instances_minival2014.json",
         },
         "coco_2014_valminusminival": {
             "img_dir": "coco/val2014",
-            "ann_file": "coco/annotations/instances_valminusminival2014.json"
+            "ann_file": "coco/annotations/instances_valminusminival2014.json",
         },
-        "voc_2007_train": {
-            "data_dir": "voc/VOC2007",
-            "split": "train"
-        },
+        "voc_2007_train": {"data_dir": "voc/VOC2007", "split": "train"},
         "voc_2007_train_cocostyle": {
             "img_dir": "voc/VOC2007/JPEGImages",
-            "ann_file": "voc/VOC2007/Annotations/pascal_train2007.json"
+            "ann_file": "voc/VOC2007/Annotations/pascal_train2007.json",
         },
-        "voc_2007_val": {
-            "data_dir": "voc/VOC2007",
-            "split": "val"
-        },
+        "voc_2007_val": {"data_dir": "voc/VOC2007", "split": "val"},
         "voc_2007_val_cocostyle": {
             "img_dir": "voc/VOC2007/JPEGImages",
-            "ann_file": "voc/VOC2007/Annotations/pascal_val2007.json"
+            "ann_file": "voc/VOC2007/Annotations/pascal_val2007.json",
         },
-        "voc_2007_test": {
-            "data_dir": "voc/VOC2007",
-            "split": "test"
-        },
+        "voc_2007_test": {"data_dir": "voc/VOC2007", "split": "test"},
         "voc_2007_test_cocostyle": {
             "img_dir": "voc/VOC2007/JPEGImages",
-            "ann_file": "voc/VOC2007/Annotations/pascal_test2007.json"
+            "ann_file": "voc/VOC2007/Annotations/pascal_test2007.json",
         },
-        "voc_2012_train": {
-            "data_dir": "voc/VOC2012",
-            "split": "train"
-        },
+        "voc_2012_train": {"data_dir": "voc/VOC2012", "split": "train"},
         "voc_2012_train_cocostyle": {
             "img_dir": "voc/VOC2012/JPEGImages",
-            "ann_file": "voc/VOC2012/Annotations/pascal_train2012.json"
+            "ann_file": "voc/VOC2012/Annotations/pascal_train2012.json",
         },
-        "voc_2012_val": {
-            "data_dir": "voc/VOC2012",
-            "split": "val"
-        },
+        "voc_2012_val": {"data_dir": "voc/VOC2012", "split": "val"},
         "voc_2012_val_cocostyle": {
             "img_dir": "voc/VOC2012/JPEGImages",
-            "ann_file": "voc/VOC2012/Annotations/pascal_val2012.json"
+            "ann_file": "voc/VOC2012/Annotations/pascal_val2012.json",
         },
         "voc_2012_test": {
             "data_dir": "voc/VOC2012",
@@ -70,16 +55,22 @@ class DatasetCatalog(object):
         },
         "cityscapes_fine_instanceonly_seg_train_cocostyle": {
             "img_dir": "cityscapes/images",
-            "ann_file": "cityscapes/annotations/instancesonly_filtered_gtFine_train.json"
+            "ann_file": "cityscapes/annotations/instancesonly_filtered_gtFine_train.json",
         },
         "cityscapes_fine_instanceonly_seg_val_cocostyle": {
             "img_dir": "cityscapes/images",
-            "ann_file": "cityscapes/annotations/instancesonly_filtered_gtFine_val.json"
+            "ann_file": "cityscapes/annotations/instancesonly_filtered_gtFine_val.json",
         },
         "cityscapes_fine_instanceonly_seg_test_cocostyle": {
             "img_dir": "cityscapes/images",
-            "ann_file": "cityscapes/annotations/instancesonly_filtered_gtFine_test.json"
-        }
+            "ann_file": "cityscapes/annotations/instancesonly_filtered_gtFine_test.json",
+        },
+        "visual_genome_train": {"img_dir": "vg/images", "ann_file": "vg/annotations/train.json"},
+        "visual_genome_val": {"img_dir": "vg/images", "ann_file": "vg/annotations/val.json"},
+        "vqa_train": {"img_dir": "vqa/images", "ann_file": "vqa/annotations/vqa_train.json"},
+        "vqa_val": {"img_dir": "vqa/images", "ann_file": "vqa/annotations/vqa_val.json"},
+        "vqa_test": {"img_dir": "vqa/images", "ann_file": "vqa/annotations/vqa_test.json"},
+        "vqa_single": {"img_dir": "vqa/images", "ann_file": "vqa/annotations/vqa_single.json"},
     }
 
     @staticmethod
@@ -91,21 +82,21 @@ class DatasetCatalog(object):
                 root=os.path.join(data_dir, attrs["img_dir"]),
                 ann_file=os.path.join(data_dir, attrs["ann_file"]),
             )
-            return dict(
-                factory="COCODataset",
-                args=args,
-            )
-        elif "voc" in name:
+            return dict(factory="COCODataset", args=args)
+        if "genome" in name or "vqa" in name:
             data_dir = DatasetCatalog.DATA_DIR
             attrs = DatasetCatalog.DATASETS[name]
             args = dict(
-                data_dir=os.path.join(data_dir, attrs["data_dir"]),
-                split=attrs["split"],
+                root=os.path.join(data_dir, attrs["img_dir"]),
+                ann_file=os.path.join(data_dir, attrs["ann_file"]),
+                opencv_loading=True
             )
-            return dict(
-                factory="PascalVOCDataset",
-                args=args,
-            )
+            return dict(factory="COCODataset", args=args)
+        elif "voc" in name:
+            data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            args = dict(data_dir=os.path.join(data_dir, attrs["data_dir"]), split=attrs["split"])
+            return dict(factory="PascalVOCDataset", args=args)
         raise RuntimeError("Dataset not available: {}".format(name))
 
 
@@ -117,7 +108,9 @@ class ModelCatalog(object):
         "FAIR/20171220/X-101-32x8d": "ImageNetPretrained/20171220/X-101-32x8d.pkl",
     }
 
-    C2_DETECTRON_SUFFIX = "output/train/coco_2014_train%3Acoco_2014_valminusminival/generalized_rcnn/model_final.pkl"
+    C2_DETECTRON_SUFFIX = (
+        "output/train/coco_2014_train%3Acoco_2014_valminusminival/generalized_rcnn/model_final.pkl"
+    )
     C2_DETECTRON_MODELS = {
         "35857197/e2e_faster_rcnn_R-50-C4_1x": "01_33_49.iAX0mXvW",
         "35857345/e2e_faster_rcnn_R-50-FPN_1x": "01_36_30.cUF7QR7I",
@@ -140,7 +133,7 @@ class ModelCatalog(object):
     @staticmethod
     def get_c2_imagenet_pretrained(name):
         prefix = ModelCatalog.S3_C2_DETECTRON_URL
-        name = name[len("ImageNetPretrained/"):]
+        name = name[len("ImageNetPretrained/") :]
         name = ModelCatalog.C2_IMAGENET_MODELS[name]
         url = "/".join([prefix, name])
         return url
@@ -153,7 +146,7 @@ class ModelCatalog(object):
         prefix = ModelCatalog.S3_C2_DETECTRON_URL
         suffix = ModelCatalog.C2_DETECTRON_SUFFIX
         # remove identification prefix
-        name = name[len("Caffe2Detectron/COCO/"):]
+        name = name[len("Caffe2Detectron/COCO/") :]
         # split in <model_id> and <model_name>
         model_id, model_name = name.split("/")
         # parsing to make it match the url address from the Caffe2 models

@@ -19,6 +19,8 @@ class ROIBoxHead(torch.nn.Module):
         self.predictor = make_roi_box_predictor(cfg)
         self.post_processor = make_roi_box_post_processor(cfg)
         self.loss_evaluator = make_roi_box_loss_evaluator(cfg)
+        self.return_feats = cfg.MODEL.ROI_BOX_HEAD.RETURN_FC_FEATS
+        self.has_attributes = cfg.MODEL.ROI_BOX_HEAD.ATTR
 
     def forward(self, features, proposals, targets=None):
         """
@@ -34,7 +36,6 @@ class ROIBoxHead(torch.nn.Module):
             losses (dict[Tensor]): During training, returns the losses for the
                 head. During testing, returns an empty dict.
         """
-
         if self.training:
             # Faster R-CNN subsamples during training the proposals with a fixed
             # positive / negative ratio
@@ -45,20 +46,43 @@ class ROIBoxHead(torch.nn.Module):
         # feature_extractor generally corresponds to the pooler + heads
         x = self.feature_extractor(features, proposals)
         # final classifier that converts the features into predictions
-        class_logits, box_regression = self.predictor(x)
+        if self.return_feats:
+            if self.has_attributes:
+                out_dict = self.predictor(x, proposals)
+                attr_logits = out_dict["attr_score"]
+            else:
+                out_dict = self.predictor(x)
+
+            class_logits = out_dict["scores"]
+            box_regression = out_dict["bbox_deltas"]
+        else:
+            class_logits, box_regression = self.predictor(x)
 
         if not self.training:
             result = self.post_processor((class_logits, box_regression), proposals)
-            return x, result, {}
+            if self.return_feats:
+                return out_dict, result, {}
+            else:
+                return x, result, {}
 
-        loss_classifier, loss_box_reg = self.loss_evaluator(
-            [class_logits], [box_regression]
-        )
-        return (
-            x,
-            proposals,
-            dict(loss_classifier=loss_classifier, loss_box_reg=loss_box_reg),
-        )
+        if self.has_attributes:
+            loss_classifier, loss_box_reg, loss_attr = self.loss_evaluator(
+                [class_logits], [box_regression], [attr_logits]
+            )
+            return (
+                x,
+                proposals,
+                dict(
+                    loss_classifier=loss_classifier, loss_box_reg=loss_box_reg, loss_attr=loss_attr
+                ),
+            )
+
+        else:
+            loss_classifier, loss_box_reg = self.loss_evaluator(
+                [class_logits], [box_regression], [attr_logits]
+            )
+
+            return (x, proposals, dict(loss_classifier=loss_classifier, loss_box_reg=loss_box_reg))
 
 
 def build_roi_box_head(cfg):

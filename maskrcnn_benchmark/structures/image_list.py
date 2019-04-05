@@ -63,7 +63,8 @@ def to_image_list(tensors, size_divisible=0):
         for img, pad_img in zip(tensors, batched_imgs):
             pad_img[: img.shape[0], : img.shape[1], : img.shape[2]].copy_(img)
 
-        image_sizes = [im.shape[-2:] for im in tensors]
+        image_sizes = [im.shape[-2:] for im in batched_imgs]
+
 
         return ImageList(batched_imgs, image_sizes)
     else:

@@ -3,9 +3,13 @@ __pycache__
 _ext
 *.pyc
 *.so
+*.swp
+*.swo
+*.nfs*
 maskrcnn_benchmark.egg-info/
 build/
 dist/
+output/
 
 # pytorch/python/numpy formats
 *.pth
